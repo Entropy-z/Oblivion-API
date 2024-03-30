@@ -1,3 +1,5 @@
+#pragma once
+
 #include <Windows.h>
 #include <structs.h>
 #include <string_manipulation.h>

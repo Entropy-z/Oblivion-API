@@ -1,4 +1,5 @@
 #pragma once
+
 #include <Windows.h>
 
 PVOID CopyMemoryEx(_Inout_ PVOID Destination, _In_ CONST PVOID Source, _In_ SIZE_T Length)
@@ -10,6 +11,21 @@ PVOID CopyMemoryEx(_Inout_ PVOID Destination, _In_ CONST PVOID Source, _In_ SIZE
 		*D++ = *S++;
 
 	return Destination;
+}
+
+VOID ZeroMemoryEx(_Inout_ PVOID Destination, _In_ SIZE_T Size)
+{
+	PULONG Dest = (PULONG)Destination;
+	SIZE_T Count = Size / sizeof(ULONG);
+
+	while (Count > 0)
+	{
+		*Dest = 0;
+		Dest++;
+		Count--;
+	}
+
+	return;
 }
 
 /*--------------------------------------------------------------------------------------*/

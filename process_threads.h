@@ -1,5 +1,16 @@
+#pragma once
+
 #include <Windows.h>
 #include <structs.h>
+
+PTEB GetTeb(VOID)
+{
+#if defined(_WIN64)
+	return (PTEB)__readgsqword(0x30);
+#elif defined(_WIN32)
+	return (PTEB)__readfsdword(0x18);
+#endif
+}
 
 PPEB GetPeb () {
 
@@ -41,6 +52,23 @@ DWORD _GetCurrentThreadId() {
 #define NtCurrentProcess() ((HANDLE)-1) // Return the pseudo handle for the current process
 #define NtCurrentThread()  ((HANDLE)-2) // Return the pseudo handle for the current thread
 
+HANDLE GetCurrentProcessNoForward(VOID)
+{
+	return (HANDLE)((HANDLE)-1);
+}
+
+HANDLE GetCurrentThreadNoForward(VOID)
+{
+	return ((HANDLE)(LONG_PTR)-2);
+}
+
+/*-------------------------------------------------------------------------------------------*/
+
+HANDLE GetProcessHeapFromTeb(VOID)
+{
+	return GetPeb()->ProcessHeap;
+}
+
 /*-------------------------------------------------------------------------------------------*/
 
 PWSTR GetCmdLine(OPTIONAL OUT PSIZE_T pSize) {
@@ -66,3 +94,4 @@ PWSTR GetCurrentDir(OPTIONAL OUT PSIZE_T pSize) {
 	return (PWSTR)pPeb->ProcessParameters->CurrentDirectory.DosPath.Buffer;
 }
 
+/*-------------------------------------------------------------------------------------------*/
