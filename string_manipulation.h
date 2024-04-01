@@ -87,43 +87,36 @@ WCHAR toLowerCaseWchar(WCHAR ch) {
 	return ch;
 }
 
-wchar_t* _strcpy(wchar_t* dest, const wchar_t* src)
+PCHAR StringCopyA(_Inout_ PCHAR String1, _In_ LPCSTR String2)
 {
-	wchar_t* p;
+	PCHAR p = String1;
 
-	if ((dest == NULL) || (src == NULL))
-		return dest;
+	while ((*p++ = *String2++) != 0);
 
-	if (dest == src)
-		return dest;
-
-	p = dest;
-	while (*src != 0) {
-		*p = *src;
-		p++;
-		src++;
-	}
-
-	*p = 0;
-	return dest;
+	return String1;
 }
 
-wchar_t* _strcat(wchar_t* dest, const wchar_t* src)
+PWCHAR StringCopyW(_Inout_ PWCHAR String1, _In_ LPCWSTR String2)
 {
-	if ((dest == NULL) || (src == NULL))
-		return dest;
+	PWCHAR p = String1;
 
-	while (*dest != 0)
-		dest++;
+	while ((*p++ = *String2++) != 0);
 
-	while (*src != 0) {
-		*dest = *src;
-		dest++;
-		src++;
-	}
+	return String1;
+}
 
-	*dest = 0;
-	return dest;
+WCHAR StringConcatW(_Inout_ PWCHAR String, _In_ LPCWSTR String2)
+{
+	StringCopyW(&String[StringLengthW(String)], String2);
+
+	return String;
+}
+
+PCHAR StringConcatA(_Inout_ PCHAR String, _In_ LPCSTR String2)
+{
+	StringCopyA(&String[StringLengthA(String)], String2);
+
+	return String;
 }
 
 BOOL IsStringEqual (IN LPCWSTR Str1, IN LPCWSTR Str2) {
