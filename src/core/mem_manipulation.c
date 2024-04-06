@@ -1,6 +1,5 @@
-#pragma once
-
 #include <Windows.h>
+#include <common.h>
 
 PVOID CopyMemoryEx(_Inout_ PVOID Destination, _In_ CONST PVOID Source, _In_ SIZE_T Length)
 {
@@ -29,8 +28,6 @@ VOID ZeroMemoryEx(_Inout_ PVOID Destination, _In_ SIZE_T Size)
 }
 
 /*--------------------------------------------------------------------------------------*/
-
-extern void* __cdecl memset(void*, int, size_t);
 
 #pragma intrinsic(memset)
 

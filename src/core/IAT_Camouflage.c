@@ -1,5 +1,4 @@
-#pragma once
-
+#include <iat.h>
 #include <Windows.h>
 
 int RandomCompileTimeSeed(void)
@@ -13,7 +12,6 @@ int RandomCompileTimeSeed(void)
 	__TIME__[0] * 36000;
 }
 
-
 PVOID Helper(PVOID* ppAddress) {
 
 	PVOID pAddress = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, 0xFF);
@@ -25,7 +23,6 @@ PVOID Helper(PVOID* ppAddress) {
 	*ppAddress = pAddress;
 	return pAddress;
 }
-
 
 VOID IatCamouflage() {
 

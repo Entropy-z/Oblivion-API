@@ -1,27 +1,6 @@
-#pragma once
-
 #include <Windows.h>
 #include <structs.h>
-
-PTEB GetTeb(VOID)
-{
-#if defined(_WIN64)
-	return (PTEB)__readgsqword(0x30);
-#elif defined(_WIN32)
-	return (PTEB)__readfsdword(0x18);
-#endif
-}
-
-PPEB GetPeb () {
-
-#if _WIN64
-	return (PPEB)(__readgsqword(0x60));
-#elif _WIN32
-	return (PPEB)(__readfsdword(0x30));
-#endif
-
-	return NULL;
-}
+#include <common.h>
 
 /*-------------------------------------------------------------------------------------------*/
 
@@ -48,9 +27,6 @@ DWORD _GetCurrentThreadId() {
 }
 
 /*-------------------------------------------------------------------------------------------*/
-
-#define NtCurrentProcess() ((HANDLE)-1) // Return the pseudo handle for the current process
-#define NtCurrentThread()  ((HANDLE)-2) // Return the pseudo handle for the current thread
 
 HANDLE GetCurrentProcessNoForward(VOID)
 {

@@ -2,7 +2,8 @@
 
 #include <Windows.h>
 #include <structs.h>
-#include <string_manipulation.h>
+#include <iat.h>
+#include <common.h>
 
 UINT32 CRC32B(LPCSTR cString) {
 
@@ -25,8 +26,6 @@ UINT32 CRC32B(LPCSTR cString) {
 
 	return ~uHash;
 }
-
-typedef HMODULE (WINAPI* fnLoadLibraryA)(IN LPCSTR lpLibFileName);
 
 HMODULE GetModuleHandleH(IN UINT32 uModuleHash) {
 

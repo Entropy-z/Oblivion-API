@@ -1,6 +1,5 @@
-#pragma once
-
 #include <Windows.h>   
+#include <common.h>
 
 SIZE_T WCharStringToCharString(_Inout_ PCHAR Destination, _In_ PWCHAR Source, _In_ SIZE_T MaximumAllowed)
 {
@@ -109,7 +108,7 @@ WCHAR StringConcatW(_Inout_ PWCHAR String, _In_ LPCWSTR String2)
 {
 	StringCopyW(&String[StringLengthW(String)], String2);
 
-	return String;
+	return (WCHAR)String;
 }
 
 PCHAR StringConcatA(_Inout_ PCHAR String, _In_ LPCSTR String2)
@@ -151,22 +150,3 @@ BOOL IsStringEqual (IN LPCWSTR Str1, IN LPCWSTR Str2) {
 	return FALSE;
 }
 
-#define PRINTA( STR, ... )                                                                  \
-    if (1) {                                                                                \
-        LPSTR buf = (LPSTR)HeapAlloc( GetProcessHeap(), HEAP_ZERO_MEMORY, 1024 );           \
-        if ( buf != NULL ) {                                                                \
-            int len = wsprintfA( buf, STR, __VA_ARGS__ );                                   \
-            WriteConsoleA( GetStdHandle( STD_OUTPUT_HANDLE ), buf, len, NULL, NULL );       \
-            HeapFree( GetProcessHeap(), 0, buf );                                           \
-        }                                                                                   \
-    }  
-
-#define PRINTW( STR, ... )                                                                  \
-    if (1) {                                                                                \
-        LPWSTR buf = (LPWSTR)HeapAlloc( GetProcessHeap(), HEAP_ZERO_MEMORY, 1024 );         \
-        if ( buf != NULL ) {                                                                \
-            int len = wsprintfW( buf, STR, __VA_ARGS__ );                                   \
-            WriteConsoleW( GetStdHandle( STD_OUTPUT_HANDLE ), buf, len, NULL, NULL );       \
-            HeapFree( GetProcessHeap(), 0, buf );                                           \
-        }                                                                                   \
-    }  

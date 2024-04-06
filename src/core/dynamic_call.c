@@ -3,9 +3,10 @@
 #include <Windows.h>
 #include <stdio.h>
 #include <winternl.h>
-#include <string_manipulation.h>
+#include <common.h>
+#include <iat.h>
 
-FARPROC GetProcAddressReplacement(IN HMODULE hModule, IN LPCSTR lpApiName) {
+FARPROC GetProcAddressNoHashing(IN HMODULE hModule, IN LPCSTR lpApiName) {
 
 	PBYTE pBase = (PBYTE)hModule;
 
@@ -42,7 +43,7 @@ FARPROC GetProcAddressReplacement(IN HMODULE hModule, IN LPCSTR lpApiName) {
 	return NULL;
 }
 
-HMODULE GetModuleHandleReplacement(IN LPCWSTR szModuleName) {
+HMODULE GetModuleHandleNoHashing(IN LPCWSTR szModuleName) {
 
 #ifdef _WIN64 // if compiling as x64
 	PPEB					pPeb		= (PEB*)(__readgsqword(0x60));
@@ -81,7 +82,7 @@ HMODULE GetModuleHandleReplacement(IN LPCWSTR szModuleName) {
 	return NULL;
 }
 
-HMODULE GetModuleHandleReplacement2(IN LPCWSTR szModuleName) {
+HMODULE GetModuleHandleNoHashing2(IN LPCWSTR szModuleName) {
 
 #ifdef _WIN64
 	PPEB					pPeb				= (PEB*)(__readgsqword(0x60));
