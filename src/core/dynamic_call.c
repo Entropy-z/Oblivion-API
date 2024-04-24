@@ -5,7 +5,6 @@
 #include <winternl.h>
 #include <common.h>
 #include <iat.h>
-
 FARPROC GetProcAddressNoHashing(IN HMODULE hModule, IN LPCSTR lpApiName) {
 
 	PBYTE pBase = (PBYTE)hModule;
@@ -34,7 +33,7 @@ FARPROC GetProcAddressNoHashing(IN HMODULE hModule, IN LPCSTR lpApiName) {
 
 		FARPROC pFunctionAddress = (FARPROC)(pBase + FunctionAddressArray[FunctionOrdinalArray[i]]);
 
-		if (strcmp(lpApiName, pFunctionName) == 0){
+		if (StringCompareW(lpApiName, pFunctionName) == 0){
 			//printf("[ %0.4d ] FOUND API -\t NAME: %s -\t ADDRESS: 0x%p  -\t ORDINAL: %d\n", i, pFunctionName, pFunctionAddress, FunctionOrdinalArray[i]);
 			return pFunctionAddress;
 		}
