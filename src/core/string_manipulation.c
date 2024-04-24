@@ -1,8 +1,7 @@
 #include <Windows.h>   
 #include <common.h>
 
-SIZE_T WCharStringToCharString(_Inout_ PCHAR Destination, _In_ PWCHAR Source, _In_ SIZE_T MaximumAllowed)
-{
+SIZE_T WCharStringToCharString(_Inout_ PCHAR Destination, _In_ PWCHAR Source, _In_ SIZE_T MaximumAllowed){
 	INT Length = (INT)MaximumAllowed;
 
 	while (--Length >= 0)
@@ -17,8 +16,7 @@ SIZE_T WCharStringToCharString(_Inout_ PCHAR Destination, _In_ PWCHAR Source, _I
 	return MaximumAllowed - Length;
 }
 
-SIZE_T CharStringToWCharString(_Inout_ PWCHAR Destination, _In_ PCHAR Source, SIZE_T _In_ MaximumAllowed)
-{
+SIZE_T CharStringToWCharString(_Inout_ PWCHAR Destination, _In_ PCHAR Source, SIZE_T _In_ MaximumAllowed){
 	INT Length = (INT)MaximumAllowed;
 
 	while (--Length >= 0)
@@ -30,8 +28,7 @@ SIZE_T CharStringToWCharString(_Inout_ PWCHAR Destination, _In_ PCHAR Source, SI
 	return MaximumAllowed - Length;
 }
 
-SIZE_T StringLengthA(_In_ LPCSTR String)
-{
+SIZE_T StringLengthA(_In_ LPCSTR String){
 	LPCSTR String2;
 
 	for (String2 = String; *String2; ++String2);
@@ -39,8 +36,7 @@ SIZE_T StringLengthA(_In_ LPCSTR String)
 	return (String2 - String);
 }
 
-SIZE_T StringLengthW(_In_ LPCWSTR String)
-{
+SIZE_T StringLengthW(_In_ LPCWSTR String){
 	LPCWSTR String2;
 
 	for (String2 = String; *String2; ++String2);
@@ -48,8 +44,7 @@ SIZE_T StringLengthW(_In_ LPCWSTR String)
 	return (String2 - String);
 }
 
-INT StringCompareA(_In_ LPCSTR String1, _In_ LPCSTR String2)
-{
+INT StringCompareA(_In_ LPCSTR String1, _In_ LPCSTR String2){
 	for (; *String1 == *String2; String1++, String2++)
 	{
 		if (*String1 == '\0')
@@ -59,8 +54,7 @@ INT StringCompareA(_In_ LPCSTR String1, _In_ LPCSTR String2)
 	return ((*(LPCSTR)String1 < *(LPCSTR)String2) ? -1 : +1);
 }
 
-INT StringCompareW(_In_ LPCWSTR String1, _In_ LPCWSTR String2)
-{
+INT StringCompareW(_In_ LPCWSTR String1, _In_ LPCWSTR String2){
 	for (; *String1 == *String2; String1++, String2++)
 	{
 		if (*String1 == '\0')
@@ -86,8 +80,7 @@ WCHAR toLowerCaseWchar(WCHAR ch) {
 	return ch;
 }
 
-PCHAR StringCopyA(_Inout_ PCHAR String1, _In_ LPCSTR String2)
-{
+PCHAR StringCopyA(_Inout_ PCHAR String1, _In_ LPCSTR String2){
 	PCHAR p = String1;
 
 	while ((*p++ = *String2++) != 0);
@@ -95,8 +88,7 @@ PCHAR StringCopyA(_Inout_ PCHAR String1, _In_ LPCSTR String2)
 	return String1;
 }
 
-PWCHAR StringCopyW(_Inout_ PWCHAR String1, _In_ LPCWSTR String2)
-{
+PWCHAR StringCopyW(_Inout_ PWCHAR String1, _In_ LPCWSTR String2){
 	PWCHAR p = String1;
 
 	while ((*p++ = *String2++) != 0);
@@ -104,15 +96,13 @@ PWCHAR StringCopyW(_Inout_ PWCHAR String1, _In_ LPCWSTR String2)
 	return String1;
 }
 
-WCHAR StringConcatW(_Inout_ PWCHAR String, _In_ LPCWSTR String2)
-{
+WCHAR StringConcatW(_Inout_ PWCHAR String, _In_ LPCWSTR String2){
 	StringCopyW(&String[StringLengthW(String)], String2);
 
 	return (WCHAR)String;
 }
 
-PCHAR StringConcatA(_Inout_ PCHAR String, _In_ LPCSTR String2)
-{
+PCHAR StringConcatA(_Inout_ PCHAR String, _In_ LPCSTR String2){
 	StringCopyA(&String[StringLengthA(String)], String2);
 
 	return String;
@@ -123,8 +113,8 @@ BOOL IsStringEqual (IN LPCWSTR Str1, IN LPCWSTR Str2) {
 	WCHAR	lStr1	[MAX_PATH],
 			lStr2	[MAX_PATH];
 
-	int		len1	= lstrlenW(Str1),
-			len2	= lstrlenW(Str2);
+	int		len1	= StringLengthW(Str1),
+			len2	= StringLengthW(Str2);
 
 	int		i		= 0,
 			j		= 0;
@@ -133,18 +123,18 @@ BOOL IsStringEqual (IN LPCWSTR Str1, IN LPCWSTR Str2) {
 		return FALSE;
 
 	for (i = 0; i < len1; i++){
-		lStr1[i] = (WCHAR)tolower(Str1[i]);
+		lStr1[i] = (WCHAR)toLowerCaseWchar(Str1[i]);
 	}
 	lStr1[i++] = L'\0'; // null terminating
 
 
 	for (j = 0; j < len2; j++) {
-		lStr2[j] = (WCHAR)tolower(Str2[j]);
+		lStr2[j] = (WCHAR)toLowerCaseWchar(Str2[j]);
 	}
 	lStr2[j++] = L'\0'; // null terminating
 
 
-	if (lstrcmpiW(lStr1, lStr2) == 0)
+	if (StringCompareW(lStr1, lStr2) == 0)
 		return TRUE;
 
 	return FALSE;
