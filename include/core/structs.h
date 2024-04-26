@@ -11,15 +11,13 @@ typedef struct _UNICODE_STRING {
     PWSTR  Buffer;
 } UNICODE_STRING, * PUNICODE_STRING;
 
-typedef struct _STRING
-{
+typedef struct _STRING{
     USHORT Length;
     USHORT MaximumLength;
     PCHAR  Buffer;
 } STRING, * PSTRING, ANSI_STRING, * PANSI_STRING, OEM_STRING, * POEM_STRING;
 
-typedef struct _PEB_LDR_DATA
-{
+typedef struct _PEB_LDR_DATA{
     ULONG Length;
     BOOLEAN Initialized;
     HANDLE SsHandle;
@@ -29,10 +27,10 @@ typedef struct _PEB_LDR_DATA
     PVOID EntryInProgress;
     BOOLEAN ShutdownInProgress;
     HANDLE ShutdownThreadId;
+
 } PEB_LDR_DATA, * PPEB_LDR_DATA;
 
-typedef struct _CURDIR
-{
+typedef struct _CURDIR{
     UNICODE_STRING DosPath;
     HANDLE Handle;
 } CURDIR, * PCURDIR;
@@ -40,8 +38,7 @@ typedef struct _CURDIR
 #define RTL_USER_PROC_CURDIR_CLOSE 0x00000002
 #define RTL_USER_PROC_CURDIR_INHERIT 0x00000003
 
-typedef struct _RTL_DRIVE_LETTER_CURDIR
-{
+typedef struct _RTL_DRIVE_LETTER_CURDIR{
     USHORT Flags;
     USHORT Length;
     ULONG TimeStamp;
@@ -51,8 +48,7 @@ typedef struct _RTL_DRIVE_LETTER_CURDIR
 #define RTL_MAX_DRIVE_LETTERS 32
 #define RTL_DRIVE_LETTER_VALID (USHORT)0x0001
 
-typedef struct _RTL_USER_PROCESS_PARAMETERS
-{
+typedef struct _RTL_USER_PROCESS_PARAMETERS{
     ULONG MaximumLength;
     ULONG Length;
 
@@ -103,8 +99,7 @@ typedef struct _RTL_USER_PROCESS_PARAMETERS
 } RTL_USER_PROCESS_PARAMETERS, * PRTL_USER_PROCESS_PARAMETERS;
 
 
-typedef struct _API_SET_NAMESPACE
-{
+typedef struct _API_SET_NAMESPACE{
     ULONG Version;
     ULONG Size;
     ULONG Flags;
@@ -128,8 +123,7 @@ typedef ULONG GDI_HANDLE_BUFFER[GDI_HANDLE_BUFFER_SIZE];
 typedef ULONG GDI_HANDLE_BUFFER32[GDI_HANDLE_BUFFER_SIZE32];
 typedef ULONG GDI_HANDLE_BUFFER64[GDI_HANDLE_BUFFER_SIZE64];
 
-typedef struct _ACTIVATION_CONTEXT_DATA
-{
+typedef struct _ACTIVATION_CONTEXT_DATA{
     ULONG Magic;
     ULONG HeaderSize;
     ULONG FormatVersion;
@@ -140,22 +134,19 @@ typedef struct _ACTIVATION_CONTEXT_DATA
     ULONG Flags; // ACTIVATION_CONTEXT_FLAG_*
 } ACTIVATION_CONTEXT_DATA, * PACTIVATION_CONTEXT_DATA;
 
-typedef struct _ASSEMBLY_STORAGE_MAP_ENTRY
-{
+typedef struct _ASSEMBLY_STORAGE_MAP_ENTRY{
     ULONG Flags;
     UNICODE_STRING DosPath;
     HANDLE Handle;
 } ASSEMBLY_STORAGE_MAP_ENTRY, * PASSEMBLY_STORAGE_MAP_ENTRY;
 
-typedef struct _ASSEMBLY_STORAGE_MAP
-{
+typedef struct _ASSEMBLY_STORAGE_MAP{
     ULONG Flags;
     ULONG AssemblyCount;
     PASSEMBLY_STORAGE_MAP_ENTRY* AssemblyArray;
 } ASSEMBLY_STORAGE_MAP, * PASSEMBLY_STORAGE_MAP;
 
-typedef struct _PEB
-{
+typedef struct _PEB{
     BOOLEAN InheritedAddressSpace;
     BOOLEAN ReadImageFileExecOptions;
     BOOLEAN BeingDebugged;
@@ -329,24 +320,42 @@ typedef struct _PEB
     ULONGLONG ExtendedFeatureDisableMask; // since WIN11
 } PEB, * PPEB;
 
-typedef struct _TEB_ACTIVE_FRAME_CONTEXT
-{
+typedef struct _TEB_ACTIVE_FRAME_CONTEXT{
     ULONG Flags;
     PSTR FrameName;
 } TEB_ACTIVE_FRAME_CONTEXT, * PTEB_ACTIVE_FRAME_CONTEXT;
 
-typedef struct _TEB_ACTIVE_FRAME
-{
+typedef struct _TEB_ACTIVE_FRAME{
     ULONG Flags;
     struct _TEB_ACTIVE_FRAME* Previous;
     PTEB_ACTIVE_FRAME_CONTEXT Context;
 } TEB_ACTIVE_FRAME, * PTEB_ACTIVE_FRAME;
 
-typedef struct _CLIENT_ID
-{
+typedef struct _CLIENT_ID{
     HANDLE UniqueProcess;
     HANDLE UniqueThread;
 } CLIENT_ID, * PCLIENT_ID;
+
+typedef VOID(NTAPI* PACTIVATION_CONTEXT_NOTIFY_ROUTINE)(
+    _In_ ULONG NotificationType, // ACTIVATION_CONTEXT_NOTIFICATION_*
+    _In_ struct _ACTIVATION_CONTEXT* ActivationContext,
+    _In_ PACTIVATION_CONTEXT_DATA ActivationContextData,
+    _In_opt_ PVOID NotificationContext,
+    _In_opt_ PVOID NotificationData,
+    _Inout_ PBOOLEAN DisableThisNotification
+);
+
+typedef struct _ACTIVATION_CONTEXT{
+    LONG RefCount;
+    ULONG Flags;
+    PACTIVATION_CONTEXT_DATA ActivationContextData;
+    PACTIVATION_CONTEXT_NOTIFY_ROUTINE NotificationRoutine;
+    PVOID NotificationContext;
+    ULONG SentNotifications[8];
+    ULONG DisabledNotifications[8];
+    ASSEMBLY_STORAGE_MAP StorageMap;
+    PASSEMBLY_STORAGE_MAP_ENTRY InlineStorageMapEntries[32];
+} ACTIVATION_CONTEXT, * PACTIVATION_CONTEXT;
 
 // https://www.nirsoft.net/kernel_struct/vista/LDR_DATA_TABLE_ENTRY.html
 typedef struct _LDR_DATA_TABLE_ENTRY {
@@ -380,37 +389,13 @@ typedef struct _LDR_DATA_TABLE_ENTRY {
 } LDR_DATA_TABLE_ENTRY, * PLDR_DATA_TABLE_ENTRY;
 
 
-typedef VOID(NTAPI* PACTIVATION_CONTEXT_NOTIFY_ROUTINE)(
-    _In_ ULONG NotificationType, // ACTIVATION_CONTEXT_NOTIFICATION_*
-    _In_ struct _ACTIVATION_CONTEXT* ActivationContext,
-    _In_ PACTIVATION_CONTEXT_DATA ActivationContextData,
-    _In_opt_ PVOID NotificationContext,
-    _In_opt_ PVOID NotificationData,
-    _Inout_ PBOOLEAN DisableThisNotification
-);
-
-typedef struct _ACTIVATION_CONTEXT
-{
-    LONG RefCount;
-    ULONG Flags;
-    PACTIVATION_CONTEXT_DATA ActivationContextData;
-    PACTIVATION_CONTEXT_NOTIFY_ROUTINE NotificationRoutine;
-    PVOID NotificationContext;
-    ULONG SentNotifications[8];
-    ULONG DisabledNotifications[8];
-    ASSEMBLY_STORAGE_MAP StorageMap;
-    PASSEMBLY_STORAGE_MAP_ENTRY InlineStorageMapEntries[32];
-} ACTIVATION_CONTEXT, * PACTIVATION_CONTEXT;
-
-typedef struct _RTL_ACTIVATION_CONTEXT_STACK_FRAME
-{
+typedef struct _RTL_ACTIVATION_CONTEXT_STACK_FRAME{
     struct _RTL_ACTIVATION_CONTEXT_STACK_FRAME* Previous;
     PACTIVATION_CONTEXT ActivationContext;
     ULONG Flags; // RTL_ACTIVATION_CONTEXT_STACK_FRAME_FLAG_*
 } RTL_ACTIVATION_CONTEXT_STACK_FRAME, * PRTL_ACTIVATION_CONTEXT_STACK_FRAME;
 
-typedef struct _ACTIVATION_CONTEXT_STACK
-{
+typedef struct _ACTIVATION_CONTEXT_STACK{
     PRTL_ACTIVATION_CONTEXT_STACK_FRAME ActiveFrame;
     LIST_ENTRY FrameListCache;
     ULONG Flags; // ACTIVATION_CONTEXT_STACK_FLAG_*
@@ -420,15 +405,13 @@ typedef struct _ACTIVATION_CONTEXT_STACK
 
 #define GDI_BATCH_BUFFER_SIZE 310
 
-typedef struct _GDI_TEB_BATCH
-{
+typedef struct _GDI_TEB_BATCH{
     ULONG Offset;
     ULONG_PTR HDC;
     ULONG Buffer[GDI_BATCH_BUFFER_SIZE];
 } GDI_TEB_BATCH, * PGDI_TEB_BATCH;
 
-typedef struct _TEB
-{
+typedef struct _TEB{
     NT_TIB NtTib;
 
     PVOID EnvironmentPointer;
