@@ -28,26 +28,23 @@ DWORD _GetCurrentThreadId() {
 
 /*-------------------------------------------------------------------------------------------*/
 
-HANDLE GetCurrentProcessNoForward(VOID)
-{
+HANDLE GetCurrentProcessNoForward(VOID){
 	return (HANDLE)((HANDLE)-1);
 }
 
-HANDLE GetCurrentThreadNoForward(VOID)
-{
+HANDLE GetCurrentThreadNoForward(VOID){
 	return ((HANDLE)(LONG_PTR)-2);
 }
 
 /*-------------------------------------------------------------------------------------------*/
 
-HANDLE GetProcessHeapFromTeb(VOID)
-{
+HANDLE GetProcessHeapFromTeb(VOID){
 	return GetPeb()->ProcessHeap;
 }
 
 /*-------------------------------------------------------------------------------------------*/
 
-PWSTR GetCmdLine(OPTIONAL OUT PSIZE_T pSize) {
+PWSTR GetCmdLine(OPTIONAL OUT PSIZE_T pSize){
 	
 	PPEB pPeb = NULL;
 	if ((pPeb = GetPeb()) == NULL)
@@ -59,7 +56,7 @@ PWSTR GetCmdLine(OPTIONAL OUT PSIZE_T pSize) {
 	return (PWSTR)pPeb->ProcessParameters->CommandLine.Buffer;
 }
 
-PWSTR GetCurrentDir(OPTIONAL OUT PSIZE_T pSize) {
+PWSTR GetCurrentDir(OPTIONAL OUT PSIZE_T pSize){
 	PPEB pPeb = NULL;
 	if ((pPeb = GetPeb()) == NULL)
 		return NULL;
