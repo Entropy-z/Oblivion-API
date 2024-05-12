@@ -1,4 +1,6 @@
-#include <Windows.h>
+#include <windows.h>
+#include <wininet.h>
+#include <winhttp.h>
 
 BOOL Wininet(LPCSTR szUrl, PBYTE* pPayloadBytes, SIZE_T* sPayloadSize) {
 	HMODULE hWnet = LoadLibraryW(L"wininet.dll");
