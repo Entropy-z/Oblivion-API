@@ -1,124 +1,73 @@
-#pragma once
+#include <windows.h>
 
-#include <Windows.h>
-#include <stdio.h>
-#include <winternl.h>
-#include <common.h>
-#include <iat.h>
-FARPROC GetProcAddressNoHashing(IN HMODULE hModule, IN LPCSTR lpApiName) {
+PVOID LdrModuleAddr( _In_ LPWSTR ModuleName){
 
-	PBYTE pBase = (PBYTE)hModule;
+    PTEB                  pTeb  = __readgsqword(0x30);
+    PLDR_DATA_TABLE_ENTRY Data  = { 0 };
+    PLIST_ENTRY           Head  = { 0 };
+    PLIST_ENTRY           Entry = { 0 };
 
-	PIMAGE_DOS_HEADER	pImgDosHdr		= (PIMAGE_DOS_HEADER)pBase;
-	if (pImgDosHdr->e_magic != IMAGE_DOS_SIGNATURE)
-		return NULL;
+    Head  = &pTeb->ProcessEnvironmentBlock->Ldr->InLoadOrderModuleList;
+    Entry = Head->Flink;
 
-	PIMAGE_NT_HEADERS	pImgNtHdrs		= (PIMAGE_NT_HEADERS)(pBase + pImgDosHdr->e_lfanew);
-	if (pImgNtHdrs->Signature != IMAGE_NT_SIGNATURE)
-		return NULL;
+    for ( ; Head != Entry ; Entry = Entry->Flink ) {
+        Data = C_PTR( Entry );
+        if ( wCharCompare(Data->BaseDllName.Buffer, ModuleName ) == 0){
+            return C_PTR(Data->DllBase);
+        }
+    }
 
-	IMAGE_OPTIONAL_HEADER	ImgOptHdr	= pImgNtHdrs->OptionalHeader;
-
-	PIMAGE_EXPORT_DIRECTORY pImgExportDir = (PIMAGE_EXPORT_DIRECTORY) (pBase + ImgOptHdr.DataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT].VirtualAddress);
-
-	PDWORD FunctionNameArray = (PDWORD)(pBase + pImgExportDir->AddressOfNames);
-
-	PDWORD FunctionAddressArray = (PDWORD)(pBase + pImgExportDir->AddressOfFunctions);
-
-	PWORD  FunctionOrdinalArray = (PWORD)(pBase + pImgExportDir->AddressOfNameOrdinals);
-
-	for (DWORD i = 0; i < pImgExportDir->NumberOfFunctions; i++){
-
-		CHAR* pFunctionName = (CHAR*)(pBase + FunctionNameArray[i]);
-
-		FARPROC pFunctionAddress = (FARPROC)(pBase + FunctionAddressArray[FunctionOrdinalArray[i]]);
-
-		if (StringCompareW(lpApiName, pFunctionName) == 0){
-			//printf("[ %0.4d ] FOUND API -\t NAME: %s -\t ADDRESS: 0x%p  -\t ORDINAL: %d\n", i, pFunctionName, pFunctionAddress, FunctionOrdinalArray[i]);
-			return pFunctionAddress;
-		}
-	}
-
-	return NULL;
+    return NULL;
 }
 
-HMODULE GetModuleHandleNoHashing(IN LPCWSTR szModuleName) {
+PVOID LdrFuncAddr( _In_ PVOID BaseModule, _In_ PCHAR FuncName ) {
+    PIMAGE_NT_HEADERS       pImgNt          = { 0 };
+    PIMAGE_EXPORT_DIRECTORY pImgExportDir   = { 0 };
+    DWORD                   ExpDirSz        =  0x00;
+    PDWORD                  AddrOfFuncs     = NULL;
+    PDWORD                  AddrOfNames     = NULL;
+    PWORD                   AddrOfOrdinals  = NULL;
+    PVOID                   FuncAddr        = NULL;
 
-#ifdef _WIN64 // if compiling as x64
-	PPEB					pPeb		= (PEB*)(__readgsqword(0x60));
-#elif _WIN32 // if compiling as x32
-	PPEB					pPeb		= (PEB*)(__readfsdword(0x30));
-#endif
+    pImgNt          = C_PTR(BaseModule + ((PIMAGE_DOS_HEADER)BaseModule)->e_lfanew);
+    pImgExportDir   = C_PTR(BaseModule + pImgNt->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT].VirtualAddress);
+    ExpDirSz        = U_PTR(BaseModule + pImgNt->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT].Size);
 
-	PPEB_LDR_DATA			pLdr		= (PPEB_LDR_DATA)(pPeb->Ldr);
-	PLDR_DATA_TABLE_ENTRY	pDte		= (PLDR_DATA_TABLE_ENTRY)(pLdr->InMemoryOrderModuleList.Flink);
-	
-	while (pDte) {
-		
-		if (pDte->FullDllName.Length != NULL) {
+    AddrOfNames     = C_PTR(BaseModule + pImgExportDir->AddressOfNames);
+    AddrOfFuncs     = C_PTR(BaseModule + pImgExportDir->AddressOfFunctions);
+    AddrOfOrdinals  = C_PTR(BaseModule + pImgExportDir->AddressOfNameOrdinals);
 
-			if (IsStringEqual(pDte->FullDllName.Buffer, szModuleName)) {
-				wprintf(L"[+] Found Dll \"%s\" \n", pDte->FullDllName.Buffer);
-#ifdef STRUCTS
-				return (HMODULE)(pDte->InInitializationOrderLinks.Flink);
-#else
-				return (HMODULE)pDte->Reserved2[0];
-#endif // STRUCTS
+    for (int i = 0; i < pImgExportDir->NumberOfNames; i++) {
 
-			}
+        PCHAR pFuncName = (PCHAR)(BaseModule + AddrOfNames[i]);
+        PVOID pFunctionAddress = C_PTR(BaseModule + AddrOfFuncs[AddrOfOrdinals[i]]);
+        
+        if (StringCompareA(pFuncName, FuncName) == 0) {
+            if ( (U_PTR(pFunctionAddress) >= U_PTR(pImgExportDir) ) &&
+                 (U_PTR(pFunctionAddress) <  U_PTR(pImgExportDir) + ExpDirSz) ) {
 
-			// wprintf(L"[i] \"%s\" \n", pDte->FullDllName.Buffer);
-		}
-		else {
-			break;
-		}
-		
-		// next element in the linked list
-		pDte = *(PLDR_DATA_TABLE_ENTRY*)(pDte);
+                CHAR ForwarderName[MAX_PATH] = { 0 };
+                DWORD dwOffset               = 0x00;
+                PCHAR FuncMod                = NULL;
+                PCHAR nwFuncName             = NULL;
 
-	}
+                MemCopy( ForwarderName, pFunctionAddress, StringLengthA((PCHAR)pFunctionAddress) );
 
-	return NULL;
+                for (int i = 0; i < StringLengthA( (PCHAR)ForwarderName ); i++) {
+                    if (((PCHAR)ForwarderName)[i] == '.') {
+                        dwOffset = i;
+                        ForwarderName[i] = NULL;
+                        break;
+                    }
+                }
+
+                FuncMod = ForwarderName;
+                nwFuncName = ForwarderName + dwOffset + 1;
+
+                return C_PTR(pFunctionAddress);
+            }
+        }
+    }
+
+    return NULL;
 }
-
-HMODULE GetModuleHandleNoHashing2(IN LPCWSTR szModuleName) {
-
-#ifdef _WIN64
-	PPEB					pPeb				= (PEB*)(__readgsqword(0x60));
-#elif _WIN32
-	PPEB					pPeb				= (PEB*)(__readfsdword(0x30));
-#endif
-
-	PLDR_DATA_TABLE_ENTRY	pDte				= (PLDR_DATA_TABLE_ENTRY)(pPeb->Ldr->InMemoryOrderModuleList.Flink);
-	
-	PLIST_ENTRY				pListHead			= (PLIST_ENTRY)&pPeb->Ldr->InMemoryOrderModuleList;
-	PLIST_ENTRY				pListNode			= (PLIST_ENTRY)pListHead->Flink;
-
-	do
-	{
-		if (pDte->FullDllName.Length != NULL) {
-			if (IsStringEqual(pDte->FullDllName.Buffer, szModuleName)) {
-				//wprintf(L"[+] Found Dll \"%s\" \n", pDte->FullDllName.Buffer);
-#ifdef STRUCTS
-				return (HMODULE)(pDte->InInitializationOrderLinks.Flink);
-#else
-				return (HMODULE)pDte->Reserved2[0];
-#endif // STRUCTS
-			}
-
-			//wprintf(L"[i] \"%s\" \n", pDte->FullDllName.Buffer);
-
-			pDte = (PLDR_DATA_TABLE_ENTRY)(pListNode->Flink);
-
-			pListNode = (PLIST_ENTRY)pListNode->Flink;
-
-		}
-
-	} while (pListNode != pListHead);
-
-
-
-	return NULL;
-}
-
-
