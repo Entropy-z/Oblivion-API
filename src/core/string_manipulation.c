@@ -36,6 +36,22 @@ SIZE_T StringLengthA(_In_ LPCSTR String){
 	return (String2 - String);
 }
 
+
+void InitUnicodeString( _Out_ PUNICODE_STRING UsStruct, _In_opt_ PCWSTR Buffer) {
+
+	if ((UsStruct->Buffer = (PWSTR)Buffer)) {
+
+		unsigned int Length = wcslen(Buffer) * sizeof(WCHAR);
+		if (Length > 0xfffc)
+			Length = 0xfffc;
+
+		UsStruct->Length = Length;
+		UsStruct->MaximumLength = UsStruct->Length + sizeof(WCHAR);
+	}
+
+	else UsStruct->Length = UsStruct->MaximumLength = 0;
+}
+
 SIZE_T StringLengthW(_In_ LPCWSTR String){
 	LPCWSTR String2;
 
