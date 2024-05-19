@@ -160,7 +160,7 @@ void InitUnicodeString( _Out_ PUNICODE_STRING UsStruct, _In_opt_ PCWSTR Buffer) 
 
 	if ((UsStruct->Buffer = (PWSTR)Buffer)) {
 
-		unsigned int Length = wcslen(Buffer) * sizeof(WCHAR);
+		unsigned int Length = StringLengthW(Buffer) * sizeof(WCHAR);
 		if (Length > 0xfffc)
 			Length = 0xfffc;
 
